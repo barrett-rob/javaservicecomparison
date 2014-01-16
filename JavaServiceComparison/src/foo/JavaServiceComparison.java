@@ -2,7 +2,9 @@ package foo;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,7 +31,10 @@ public class JavaServiceComparison {
 		if (!to.isDirectory()) {
 			throw new IllegalArgumentException(toPath + " must be a directory");
 		}
+		long start = System.currentTimeMillis();
 		new JavaServiceComparison(from, to);
+		long elapsed = System.currentTimeMillis() - start;
+		System.out.println("elapsed time: "+ elapsed + "ms");
 	}
 
 	public JavaServiceComparison(File from, File to) {
@@ -40,7 +45,7 @@ public class JavaServiceComparison {
 		}
 		List<String> toJars = new EARJarLister(to).list();
 		List<String> toExtracted = runExtraction(toJars);
-		for (String s : fromExtracted) {			
+		for (String s : toExtracted) {			
 			System.out.println(s);
 		}
 	}
@@ -55,22 +60,29 @@ public class JavaServiceComparison {
 				System.getProperty("java.home"), "bin"), "java")
 				.getAbsolutePath();
 		ProcessBuilder pb = new ProcessBuilder(jvm, "-classpath", sb.toString(), ServiceFromClasspathExtractor.class.getName());
-		pb.inheritIO();
 		try {
-			File temp = File.createTempFile("foo", ".txt");
-			pb.redirectOutput(temp);
+			File out = File.createTempFile("out", ".txt");
+			File err = File.createTempFile("err", ".txt");
+			pb.redirectOutput(out);
+			pb.redirectError(err);
 			Process p = pb.start();
 			p.waitFor();
-			BufferedReader br = new BufferedReader(new FileReader(temp));
 			List<String> results = new ArrayList<String>();
-			String line;
-			while ((line = br.readLine()) != null) {
-				results.add(line);
-			}
-			br.close();
+			getResultsFromFile(out, results);
+			getResultsFromFile(err, results);
 			return results;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	private void getResultsFromFile(File out, List<String> results)
+			throws FileNotFoundException, IOException {
+		BufferedReader br = new BufferedReader(new FileReader(out));
+		String line;
+		while ((line = br.readLine()) != null) {
+			results.add(line);
+		}
+		br.close();
 	}
 }
