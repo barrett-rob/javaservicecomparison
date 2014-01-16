@@ -10,4 +10,5 @@
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="foo.JavaServiceComparison"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="/Users/robertb/Downloads/POJO /Users/robertb/Downloads/Ellipse-EL8.4.5_.4247"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="JavaServiceComparison"/>
+<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Xms512M -Xmx512M"/>
 </launchConfiguration>

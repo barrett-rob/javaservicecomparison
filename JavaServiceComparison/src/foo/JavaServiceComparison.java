@@ -32,44 +32,52 @@ public class JavaServiceComparison {
 			throw new IllegalArgumentException(toPath + " must be a directory");
 		}
 		long start = System.currentTimeMillis();
-		new JavaServiceComparison(from, to);
+		try {
+			new JavaServiceComparison(from, to);
+		} catch (Error e) {
+			e.printStackTrace();
+			throw e;
+		}
 		long elapsed = System.currentTimeMillis() - start;
-		System.out.println("elapsed time: "+ elapsed + "ms");
+		System.out.println("elapsed time: " + elapsed + "ms");
 	}
 
 	public JavaServiceComparison(File from, File to) {
 		List<String> fromJars = new EARJarLister(from).list();
-		List<String> fromExtracted = runExtraction(fromJars);
-		for (String s : fromExtracted) {			
+		List<String> fromExtracted = runExtraction(from.getName(), fromJars);
+		for (String s : fromExtracted) {
 			System.out.println(s);
 		}
 		List<String> toJars = new EARJarLister(to).list();
-		List<String> toExtracted = runExtraction(toJars);
-		for (String s : toExtracted) {			
+		List<String> toExtracted = runExtraction(to.getName(), toJars);
+		for (String s : toExtracted) {
 			System.out.println(s);
 		}
 	}
 
-	private List<String> runExtraction(List<String> jars) {
+	private List<String> runExtraction(String name, List<String> jars) {
 		StringBuilder sb = new StringBuilder();
 		for (String s : jars) {
+			if (s.contains("logback")) {
+				continue;
+			}
 			sb.append(s).append(":");
 		}
-		sb.append(ServiceFromClasspathExtractor.class.getProtectionDomain().getCodeSource().getLocation().getPath());
-		String jvm = new File(new java.io.File(
-				System.getProperty("java.home"), "bin"), "java")
-				.getAbsolutePath();
-		ProcessBuilder pb = new ProcessBuilder(jvm, "-classpath", sb.toString(), ServiceFromClasspathExtractor.class.getName());
+		sb.append(ServiceFromClasspathExtractor.class.getProtectionDomain()
+				.getCodeSource().getLocation().getPath());
+		sb.append(":/Users/robertb/glassfish4/glassfish/lib/javaee.jar");
+		String jvm = new File(new java.io.File(System.getProperty("java.home"),
+				"bin"), "java").getAbsolutePath();
+		ProcessBuilder pb = new ProcessBuilder(jvm, "-XX:MaxPermSize=1024M", "-Xmx1024M", "-classpath",
+				sb.toString(), ServiceFromClasspathExtractor.class.getName());
+		pb.inheritIO();
 		try {
-			File out = File.createTempFile("out", ".txt");
-			File err = File.createTempFile("err", ".txt");
+			File out = new File("/Users/robertb/Downloads/" + name + ".txt");
 			pb.redirectOutput(out);
-			pb.redirectError(err);
 			Process p = pb.start();
 			p.waitFor();
 			List<String> results = new ArrayList<String>();
 			getResultsFromFile(out, results);
-			getResultsFromFile(err, results);
 			return results;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
